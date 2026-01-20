@@ -1,4 +1,5 @@
 # QuickBible Telegram Bot 📖
+<!-- Trigger build for rename -->
 
 A Telegram bot for [QuickBible](https://quickbible.app), built with Node.js and Grammy.
 Supports **Serverless Deployment (Vercel)** and **Local Polling**.
