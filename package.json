@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/bot.ts",
-    "start": "ts-node src/bot.ts",
+    "dev": "nodemon src/local.ts",
+    "start": "ts-node src/local.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
