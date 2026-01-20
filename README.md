@@ -7,7 +7,12 @@ Supports **Serverless Deployment (Vercel)** and **Local Polling**.
 - **Search**: `/search <query>` (Keyword or "Exact Phrase")
 - **Random Verse**: `/random`
 - **Lookup**: `John 3:16`
-- **Schedule**: Posts a random verse every 15 minutes (configurable).
+- **Schedule**: Posts a random verse every 15 minutes (via GitHub Actions).
+
+## Scheduler (GitHub Actions)
+This bot uses **GitHub Actions** to trigger the Vercel cron job every 15 minutes (bypassing Vercel's Hobby Tier limits).
+- The workflow is defined in `.github/workflows/schedule.yml`.
+- It hits the `/api/cron` endpoint.
 
 ## Deployment (Vercel)
 This bot is designed to run for **free** on Vercel.
