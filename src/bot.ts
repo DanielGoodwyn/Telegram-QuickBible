@@ -35,11 +35,17 @@ export function formatVerse(v: Verse) {
 }
 
 export function createVerseKeyboard(book: string, chapter: number, verse: number) {
-    const ref = `${book} ${chapter}:${foundVerseNum(verse)}`;
+    const v = foundVerseNum(verse);
+    const bookUnderscore = book.replace(/ /g, "_");
+    const payload = `${bookUnderscore}_${chapter}_${v}`;
+    const botUrl = `https://t.me/QuickBibleVerseBot?start`;
+
+    const versionsUrl = bibleService.getBibleHubUrl(book, chapter, v) || "https://biblehub.com";
+
     return new InlineKeyboard()
-        .text("📖 Versions", `versions:${ref}`)
-        .text("🔗 Cross Refs", `refs:${ref}`)
-        .text("🔊 Audio", `audio:${ref}`);
+        .url("📖 Versions", versionsUrl)
+        .url("🔗 Cross Refs", `${botUrl}=refs_${payload}`)
+        .url("🔊 Audio", `${botUrl}=audio_${payload}`);
 }
 
 function foundVerseNum(verse: any) {
@@ -59,7 +65,27 @@ async function sendVerse(ctx: any, book: string, chapter: number, verseNum: numb
 
 // --- Commands ---
 
-bot.command("start", (ctx) => ctx.reply("Welcome to QuickBible! 📖\nUse /help to see available commands."));
+bot.command("start", async (ctx) => {
+    const payload = ctx.match;
+    if (payload) {
+        const parts = String(payload).split("_");
+        if (parts.length >= 2) {
+            const action = parts[0]; // "refs" or "audio"
+            // Reconstruct reference: 1_Samuel_3_16 -> 1 Samuel 3:16
+            const verse = parts.pop();
+            const chapter = parts.pop();
+            const book = parts.slice(1).join(" ");
+            const ref = `${book} ${chapter}:${verse}`;
+
+            if (action === "refs") {
+                return handleReferences(ctx, ref);
+            } else if (action === "audio") {
+                return handleAudio(ctx, ref);
+            }
+        }
+    }
+    await ctx.reply("Welcome to QuickBible! 📖\nUse /help to see available commands.");
+});
 
 bot.command("help", (ctx) => {
     ctx.reply(
@@ -131,13 +157,7 @@ bot.on("callback_query:data", async (ctx) => {
     const action = data.substring(0, colonIndex);
     const rest = data.substring(colonIndex + 1);
 
-    if (action === "versions") {
-        await handleVersions(ctx, rest);
-    } else if (action === "refs") {
-        await handleReferences(ctx, rest);
-    } else if (action === "audio") {
-        await handleAudio(ctx, rest);
-    } else if (action === "search") {
+    if (action === "search") {
         const parts = rest.split(":");
         const page = parseInt(parts[0]);
         const query = parts.slice(1).join(":");
