@@ -1,4 +1,9 @@
 {
+    "functions": {
+        "api/**/*.ts": {
+            "includeFiles": "web.xml,cross_references.txt"
+        }
+    },
     "rewrites": [
         {
             "source": "/api/(.*)",
