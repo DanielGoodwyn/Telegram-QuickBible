@@ -68,7 +68,6 @@ bot.command("help", (ctx) => {
         "/help - Show this help message\n" +
         "/search <query> - Search for verses\n" +
         "/random - Get a random verse\n" +
-        "/daily - Get a daily verse\n" +
         "/verse <ref> - Get verse text (e.g. /verse John 3:16)\n" +
         "/audio <ref> - Listen to audio (e.g. /audio John 3:16)\n" +
         "/versions <ref> - BibleHub link (e.g. /versions John 3:16)\n" +
