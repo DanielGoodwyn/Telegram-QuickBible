@@ -1,7 +1,8 @@
 import { Bot, InlineKeyboard } from "grammy";
 import { config } from "dotenv";
 import * as cron from "node-cron";
-import { bibleService } from "./services/bibleService";
+import { bibleService, Verse } from "./services/bibleService";
+export { bibleService };
 
 // Load environment variables
 config();
@@ -10,10 +11,10 @@ if (!process.env.BOT_TOKEN) {
     throw new Error("BOT_TOKEN is not set in .env file");
 }
 
-const bot = new Bot(process.env.BOT_TOKEN);
+export const bot = new Bot(process.env.BOT_TOKEN);
 const DAILY_CHANNEL_ID = process.env.DAILY_CHANNEL_ID;
 
-const FOOTER = "\n\n@QuickBibleVerseBot";
+export const FOOTER = "\n\n@QuickBibleVerseBot";
 
 // --- Helpers ---
 
@@ -26,14 +27,14 @@ function escapeHtml(unsafe: string) {
         .replace(/'/g, "&#039;");
 }
 
-function formatVerse(v: any) {
+export function formatVerse(v: Verse) {
     // Format: <b>Reference</b> \n <blockquote>Text</blockquote>
     const ref = escapeHtml(`${v.book} ${v.chapter}:${v.verse}`);
     const text = escapeHtml(v.text);
     return `<b>${ref}</b>\n<blockquote>${text}</blockquote>${FOOTER}`;
 }
 
-function createVerseKeyboard(book: string, chapter: number, verse: number) {
+export function createVerseKeyboard(book: string, chapter: number, verse: number) {
     const ref = `${book} ${chapter}:${foundVerseNum(verse)}`;
     return new InlineKeyboard()
         .text("📖 Versions", `versions:${ref}`)
