@@ -282,6 +282,22 @@ export class BibleService {
         return this.verses[randomIndex];
     }
 
+    getNextVerse(v: Verse): Verse | undefined {
+        const index = this.verses.findIndex(item =>
+            item.book === v.book && item.chapter === v.chapter && item.verse === v.verse
+        );
+        if (index === -1 || index === this.verses.length - 1) return undefined;
+        return this.verses[index + 1];
+    }
+
+    getPreviousVerse(v: Verse): Verse | undefined {
+        const index = this.verses.findIndex(item =>
+            item.book === v.book && item.chapter === v.chapter && item.verse === v.verse
+        );
+        if (index === -1 || index === 0) return undefined;
+        return this.verses[index - 1];
+    }
+
     getBooks(): string[] {
         return this.books;
     }

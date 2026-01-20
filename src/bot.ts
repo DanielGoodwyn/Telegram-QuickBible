@@ -34,31 +34,52 @@ export function formatVerse(v: Verse) {
     return `<b>${ref}</b>\n<blockquote>${text}</blockquote>${FOOTER}`;
 }
 
-export function createVerseKeyboard(book: string, chapter: number, verse: number) {
+export function createVerseKeyboard(book: string, chapter: number, verse: number, isChannel: boolean = false) {
     const v = foundVerseNum(verse);
     const bookUnderscore = book.replace(/ /g, "_");
     const payload = `${bookUnderscore}_${chapter}_${v}`;
     const botUrl = `https://t.me/QuickBibleVerseBot?start`;
-
     const versionsUrl = bibleService.getBibleHubUrl(book, chapter, v) || "https://biblehub.com";
 
-    return new InlineKeyboard()
-        .url("📖 Versions", versionsUrl)
+    const kb = new InlineKeyboard();
+
+    // Navigation row
+    if (isChannel) {
+        // In channel, everything must be a URL
+        kb.url("⬅️ Prev", `${botUrl}=prev_${payload}`)
+            .url("Next ➡️", `${botUrl}=next_${payload}`)
+            .row();
+    } else {
+        // In private chat, use callback buttons for instant editing
+        kb.text("⬅️ Prev", `prev:${payload}`)
+            .text("Next ➡️", `next:${payload}`)
+            .row();
+    }
+
+    kb.url("📖 Versions", versionsUrl)
         .url("🔗 Cross Refs", `${botUrl}=refs_${payload}`)
         .url("🔊 Audio", `${botUrl}=audio_${payload}`);
+
+    return kb;
 }
 
 function foundVerseNum(verse: any) {
     return typeof verse === 'object' ? verse.verse : verse;
 }
 
-async function sendVerse(ctx: any, book: string, chapter: number, verseNum: number) {
+async function sendVerse(ctx: any, book: string, chapter: number, verseNum: number, isEdit: boolean = false) {
     const verse = bibleService.getVerse(book, chapter, verseNum);
     if (verse) {
-        return ctx.reply(formatVerse(verse), {
-            parse_mode: "HTML",
-            reply_markup: createVerseKeyboard(verse.book, verse.chapter, verse.verse)
-        });
+        const text = formatVerse(verse);
+        const options = {
+            parse_mode: "HTML" as const,
+            reply_markup: createVerseKeyboard(verse.book, verse.chapter, verse.verse, !ctx.chat || ctx.chat.type === "channel")
+        };
+
+        if (isEdit) {
+            return ctx.editMessageText(text, options).catch(() => { });
+        }
+        return ctx.reply(text, options);
     }
     return ctx.reply("Verse not found.");
 }
@@ -70,17 +91,27 @@ bot.command("start", async (ctx) => {
     if (payload) {
         const parts = String(payload).split("_");
         if (parts.length >= 2) {
-            const action = parts[0]; // "refs" or "audio"
+            const action = parts[0]; // "refs", "audio", "prev", "next"
             // Reconstruct reference: 1_Samuel_3_16 -> 1 Samuel 3:16
-            const verse = parts.pop();
-            const chapter = parts.pop();
-            const book = parts.slice(1).join(" ");
-            const ref = `${book} ${chapter}:${verse}`;
+            const verseNum = parts.pop();
+            const chapterNum = parts.pop();
+            const bookName = parts.slice(1).join(" ").replace(/_/g, " ");
+            const ref = `${bookName} ${chapterNum}:${verseNum}`;
 
             if (action === "refs") {
                 return handleReferences(ctx, ref);
             } else if (action === "audio") {
                 return handleAudio(ctx, ref);
+            } else if (action === "prev" || action === "next") {
+                const current = bibleService.getVerse(bookName, parseInt(chapterNum || "0"), parseInt(verseNum || "0"));
+                if (current) {
+                    const adjacent = action === "next"
+                        ? bibleService.getNextVerse(current)
+                        : bibleService.getPreviousVerse(current);
+                    if (adjacent) {
+                        return sendVerse(ctx, adjacent.book, adjacent.chapter, adjacent.verse);
+                    }
+                }
             }
         }
     }
@@ -104,10 +135,7 @@ bot.command("help", (ctx) => {
 
 bot.command("random", (ctx) => {
     const v = bibleService.getRandomVerse();
-    ctx.reply(formatVerse(v), {
-        parse_mode: "HTML",
-        reply_markup: createVerseKeyboard(v.book, v.chapter, v.verse)
-    });
+    sendVerse(ctx, v.book, v.chapter, v.verse);
 });
 
 bot.command("search", (ctx) => {
@@ -162,9 +190,27 @@ bot.on("callback_query:data", async (ctx) => {
         const page = parseInt(parts[0]);
         const query = parts.slice(1).join(":");
         await handleSearch(ctx, query, page, true);
+    } else if (action === "prev" || action === "next") {
+        const parts = rest.split("_");
+        const verseNum = parseInt(parts.pop() || "0");
+        const chapter = parseInt(parts.pop() || "0");
+        const book = parts.join(" ").replace(/_/g, " ");
+
+        const currentVerse = bibleService.getVerse(book, chapter, verseNum);
+        if (currentVerse) {
+            const adjacent = action === "next"
+                ? bibleService.getNextVerse(currentVerse)
+                : bibleService.getPreviousVerse(currentVerse);
+
+            if (adjacent) {
+                await sendVerse(ctx, adjacent.book, adjacent.chapter, adjacent.verse, true);
+            } else {
+                await ctx.answerCallbackQuery({ text: "End of Bible reach.", show_alert: false });
+            }
+        }
     }
 
-    await ctx.answerCallbackQuery();
+    await ctx.answerCallbackQuery().catch(() => { });
 });
 
 // --- Feature Logic Helpers ---
@@ -308,7 +354,7 @@ cron.schedule("*/15 * * * *", () => {
         const v = bibleService.getRandomVerse();
         bot.api.sendMessage(DAILY_CHANNEL_ID, formatVerse(v), {
             parse_mode: "HTML",
-            reply_markup: createVerseKeyboard(v.book, v.chapter, v.verse)
+            reply_markup: createVerseKeyboard(v.book, v.chapter, v.verse, true)
         }).catch(err => console.error("Failed to post scheduled verse:", err));
     }
 });
