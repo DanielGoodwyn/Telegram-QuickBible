@@ -10,4 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Bot Cron
-        run: curl -X POST https://telegram-quick-bible-2.vercel.app/api/cron
+        run: curl -X POST https://telegram-quick-bible.vercel.app/api/cron

@@ -24,7 +24,7 @@ This bot is designed to run for **free** on Vercel.
     - `DAILY_CHANNEL_ID`: Channel ID or Username (e.g. `@QuickBible`).
 4.  **Set Webhook**:
     - After deployment, set the webhook to your Vercel URL:
-    - `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<VERCEL_URL>/api/telegram`
+    - `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://telegram-quick-bible.vercel.app/api/telegram`
 
 ## Local Development
 1.  `npm install`
